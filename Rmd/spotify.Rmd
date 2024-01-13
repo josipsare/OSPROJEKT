@@ -1,0 +1,40 @@
+---
+title: "untiteld"
+output: html_document
+date: "2024-01-13"
+---
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(readr)
+library(stringr)
+library(hflights)
+library(tidyr)
+library(lubridate)
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+**Učitavanje podataka**
+```{r}
+data <- read_csv("../data/spotify_songs.csv")
+data$playlist_name <- factor(data$playlist_name)
+data$playlist_genre <- factor(data$playlist_genre)
+data$playlist_subgenre <- factor(data$playlist_subgenre)
+data$mode <- factor(data$mode)
+data
+
+```
+
+
+```{r}
+dataOcjeneGenre <- data
+dataOcjeneGenre %>% group_by(playlist_genre) %>% summarise(meanOcjena=mean(track_popularity))->dataOcjeneGenre
+dataOcjeneGenre
+ggplot(data, aes(color = playlist_genre,y=track_popularity,x=danceability))+geom_point(alpha = 0.4)
+ggplot(dataOcjeneGenre, aes(x = playlist_genre,y=meanOcjena)) + geom_histogram()
+  
+```
+
