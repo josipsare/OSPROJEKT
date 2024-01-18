@@ -191,6 +191,11 @@ ggplot(top_artists, aes(x = reorder(Artist, -TotalStreams), y = TotalStreams)) +
   )
 
 ```
+<br>
+**Analiza grafa**
+
+Grafički prikaz ukupnog broja pregleda temeljem 10 najpopularnijih pjesama svakog izvođača pruža zanimljiv uvid u popularnost umjetnika na Spotify platformi. Analizirajući graf, uočavamo da je Travis Scott apsolutni lider među izvođačima, slijedi ga Billie Eilish, Post Malone te ostali.
+
 **Najpopularnije pjesme Travis Scotta**
 ```{r}
 # Filtriranje podataka samo za izvođača Travis Scott
@@ -222,19 +227,79 @@ ggplot(top_travis_scott_songs, aes(x = reorder(TrackName, -Popularity), y = Popu
 
 
 ```
+<br>
+**Analiza grafa**
 
-TODO:
-1. Dodati jos minimalno 3-4 grafa
-  - Popularnost Pjesama u Odnosu na Izvođača
-  - najpopularnijeg izvodaca pa onda njegove najpopularnije pjesme --> slicno kao i sa zanrovima
-  - popularnost ovisno o trajanju pjesme ili tako nesto na tu foru
-  - Vizualizacija Distribucije Trajanja Pjesama po Žanrovima
-Po mogucnosti probajte sredit da je barem jedan tockasti u boji da izgleda lijepo
-Napisat analizu svakog grafa, slicno kao sto je napisano na ova dva prethodna
+Ova analiza naglašava impresivnu popularnost Travisa Scotta na Spotify platformi, pri čemu se ističe njegov utjecaj kroz deset najpopularnijih pjesama. "Highest in the Room" dominira među njima, zatim slijedi istoimeni Remix, "Sicko mode" i ostali. Presudila je njegova konstantnost jer nije samo bljesnuo s jednom pjesmom, već u svima drži jako visoku kvalitetu izvedbe.
 
-2. Zakljucak
 
-3. Formatirat sve i export u pdf.
+```{r}
+popularity_duration <- data[,c("Popularity","DurationMin")]
+popularity_duration
+summary(popularity_duration$DurationMin)
+
+popularity_duration$DurationCategory <- cut(popularity_duration$DurationMin, breaks = c(-Inf, quantile(popularity_duration$DurationMin, c(1/3, 2/3)), Inf),
+                           labels = c("Short", "Medium", "Long"))
+
+
+ggplot(popularity_duration, aes(x = DurationCategory, y = Popularity, fill = DurationCategory)) +
+  geom_boxplot(color = "black", alpha = 0.7) +  # Set boxplot color and transparency
+  labs(title = "Boxplot - Popularnost u odnosu na trajanje", y = "Popularnost",x="Kategorija trajanja") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),       # Adjust axis text size
+        axis.title = element_text(size = 14),      # Adjust axis title size
+        plot.title = element_text(size = 16, hjust = 0.5),  # Adjust plot title size and center it
+        legend.position = "none")
+
+
+ggplot(popularity_duration, aes(x = DurationMin, y = Popularity, fill = DurationCategory)) +
+  geom_col() +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Popularnost u odnosu na duljinu", y = "Popularnost", x = "Trajanje", fill = "Kategorije trajanja") +
+  theme_minimal()+
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 16, hjust = 0.5),
+        legend.position = "bottom",
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10),
+        panel.grid.major = element_line(color = "lightgray", linetype = "dashed", size = 0.5),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "white"),
+        panel.background = element_rect(fill = "white"),
+        axis.line = element_line(color = "black"),
+        legend.background = element_rect(fill = "white"))
+
+
+
+```
+<br>
+<br>
+**Analiza grafa**
+Podijelili smo trajanje pjesama u 3 jednake kategorije, Short, Medium, Long. Graf "Boxplot - Popularnost u odnosu na trajanje" prikazuje odnose Q1, Q2 i Q3 metrika koje se odnose na popularnost pjesama pripadajuće kategorije. Iz priloženog se vidi da je medijan popularnosti za duge pjesme znatno niži nego što možemo reći sa kratke i srednje. Tu tvrdnju samo podupire graf "Popularnost u odnosu na duljinu" koji prikazuje da su srednje pjesme najpopularnije, na drugom mjestu su kratke, a daleko ispod njih se nalaze duge pjesme
+
+
+```{r}
+data$Genre %>% factor() %>% table()
+
+ggplot(data, aes(x = Popularity, fill = Genre)) +
+  geom_density(alpha = 0.3) +
+  labs(title = "Graf funkcije gustoće popularnosti po žanru", y = "Gustoća",x="Popularnost") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 12),
+        axis.title = element_text(size = 14),
+        plot.title = element_text(size = 16, hjust = 0.5),
+        legend.position = "top")  # Move the legend to the top
+```
+<br>
+<br>
+**Analiza grafa**
+Iz grafa "Graf funkcije gustoće popularnosti po žanru" možemo zaključiti da većinom funkcije gustoća svih žanrova donekle prate normalnu razdiobu, stime da sve imaju veliku devijaciju u lijevom repu. Naime Žanr "edm" ima najviše malo popularnih pjesama, dok "pop" najmanje. Najviše srednje ocjenjenih pjesama pripadaju žanru "rap", dok u najbolje ocjenjenim pjesmama prednjači žanr "latin" 
+
+## ZAKLJUČAK
+Na samom početku smo napravili potrebne pretvorbe podataka, i pretvorbe tipova podataka u one koje omogućavaju lakšu analizu. Nakon toga nam je ostao podatknovni skup na kojem je puno laške izvoditi analize koje nas zanimaju. Iz grafa "Broj Pjesama po Žanru" vidimo da svakom žanru pripadaju od okvirno 5000 do 6000 pjesama. Za bližu analizu broja novih pjesama kroz godine smo uzeli žanr "edm" i to smo predstavili u grafu "Broj Pjesama EDM Žanra po Godinama". Iz grafa možemo isčitati da je žanr bio relativno nepopularan do 2015. godine, a posebice do 2010. godine. Nakon 2015. godine žanr uživa puno veću popularnost i dostiže brojke od čak više od 2000 novih pjesama godišnje netom prije 2020. godine. Zatim smo obradili popularnost samih izvođača i njihovih pjesama. Grafički prikaz ukupnog broja pregleda temeljem 10 najpopularnijih pjesama svakog izvođača pruža intrigantan uvid u popularnost umjetnika na Spotify platformi. Analizom grafa ističe se da je Travis Scott apsolutni lider među izvođačima. Ova analiza naglašava impresivnu popularnost Travisa Scotta na Spotify platformi, ističući njegov utjecaj kroz deset najpopularnijih pjesama. Posebno se ističe "Highest in the Room" kao dominantna pjesma. Ključna je Travisova konstantnost, ne samo s jednom pjesmom, već s održavanjem visoke kvalitete izvedbe u svim pjesmama.Nakon toga smo se odlučili analizirati odnos popularnosti i trajanja pjesme tako što smo trajanje podjelili u 3 podjednake kategorije.Iz grafova "Boxplot - Popularnost u odnosu na trajanje" i "Popularnost u odnosu na duljinu" vidimo kako su dulje pjesme u glavnom lošije ocjenjene u odnosu na pjesme koje su kratke ili srendnje, koje prednjače u popularnosti. Za kraj odlučili smo se na analizu funckije gustoće popularnosti pojedinih žanrova što smo vizualizirali u grafu "Graf funkcije gustoće popularnosti po žanru". Vidimo da po broju nisko ocjenjenih pjesama pobjedu odnosi žanr "edm" dok žanr "rap" prednjači po srednje ocjenjenim pjesmama, a u najboljim pjesmama se ističe žanr "latin".
+
+
 
 
 
