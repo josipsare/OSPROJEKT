@@ -1,7 +1,7 @@
 ---
 title: "Projekt OSP - Spotify Songs"
 date: "`r Sys.Date()`"
-author: "0036539445 Filip Buhinićek, 0036542400 Dominik Zoričić"
+author: "0036539445 Filip Buhinićek, 0036542400 Dominik Zoričić, 0036539188 Nikola Botić"
 output:
   html_document: default
 ---
@@ -161,6 +161,67 @@ Graf "Broj Pjesama EDM Žanra po Godinama" vizualno prikazuje raspodjelu glazben
 Iz priloženog grafa može se zaključiti kako je edm (Electro dance music) postao sve više popularan tek od 2012 godine, te od tada sve više preuzima mainstream glazbe na Spotifyu.
 
 
+**Najpopularniji izvodaci**
+```{r}
+# Grupiranje podataka prema izvođačima
+artist_popularity <- data %>%
+  group_by(Artist) %>%
+  # Odabir 10 najpopularnijih pjesama za svakog izvođača
+  top_n(10, Popularity) %>%
+  # Računanje ukupnog broja pregleda za svakog izvođača
+  summarise(TotalStreams = sum(Popularity, na.rm = TRUE))
+
+# Prikaz 10 najpopularnijih izvođača
+top_artists <- artist_popularity %>%
+  top_n(10, TotalStreams)
+
+# Stvaranje bar grafa
+ggplot(top_artists, aes(x = reorder(Artist, -TotalStreams), y = TotalStreams)) +
+  geom_bar(stat = "identity", fill = "#00AFBB") +
+  theme_minimal() +
+  labs(title = "Top 10 najpopularnijih izvodaca na temelju njihovih 10 najpopularnijih pjesama",
+       x = "Izvođači",
+       y = "Ukupan Broj Pregleda") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+**Najpopularnije pjesme Travis Scotta**
+```{r}
+# Filtriranje podataka samo za izvođača Travis Scott
+travis_scott_songs <- data[data$Artist == "Travis Scott", ]
+
+# Uklanjanje duplikata
+travis_scott_songs <- distinct(travis_scott_songs, TrackName, .keep_all = TRUE)
+
+# Odabir 10 najpopularnijih pjesama
+top_travis_scott_songs <- head(arrange(travis_scott_songs, desc(Popularity)), 10)
+
+# Stvaranje bar grafa za 10 najpopularnijih pjesama izvođača Travis Scott
+ggplot(top_travis_scott_songs, aes(x = reorder(TrackName, -Popularity), y = Popularity, fill = TrackName)) +
+  geom_col() +
+  theme_minimal() +
+  labs(title = "Top 10 Najpopularnijih Pjesama Travisa Scotta",
+       x = "Pjesme",
+       y = "Popularnost") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.margin = margin(t = 1, r = 1, b = 1, l = 3, unit = "cm")  # Prilagodba margina
+  ) +
+  scale_fill_brewer(palette = "Set3") +
+  guides(fill = "none")  # Izbacivanje legende za boje
+
+
+```
 
 TODO:
 1. Dodati jos minimalno 3-4 grafa
