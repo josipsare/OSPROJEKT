@@ -1,7 +1,9 @@
 ---
-title: "untiteld"
-output: html_document
-date: "2024-01-13"
+title: "Projekt OSP - Spotify Songs"
+date: "`r Sys.Date()`"
+author: "0036539445 Filip Buhinićek, 0036542400 Dominik Zoričić"
+output:
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -15,26 +17,163 @@ library(ggplot2)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+## UVOD
+Ovaj skup podataka pruža opsežnu zbirku pjesama s nizom atributa, uključujući, ali ne ograničavajući se na, popularnost pjesme, žanr, pojedinosti o izvođaču i niz akustičnih značajki poput tempa, energije itd. Ovi atributi omogućuju višestruku analizu, od razumijevanja preferencija slušatelja do istraživanja glazbenih trendova tijekom vremena.
+
+Naš projekt ima za cilj istražiti ovaj skup podataka kako bismo otkrili uvide i obrasce u svijetu glazbe na Spotifyju. Za analizu različitih aspekata podataka koristit ćemo niz statističkih tehnika i metoda vizualizacije podataka. Projekt je strukturiran za istraživanje skupa podataka na sveobuhvatan način, počevši od početnog prikupljanja podataka i predobrade, prelazeći kroz istraživačku analizu podataka.
+
+Krajnji cilj ovog projekta je napraviti analizu podatkovnog skupa, koji će biti zanimljiv svim čitateljima a ne samo ljubiteljima glazbe.
 
 
-**Učitavanje podataka**
+## OPĆENITO O PODATKOVNOM SKUPU
+Paket spotifyr pruža podatke u sirovom, nefiltriranom obliku, dajući slobodu i fleksibilnost u oblikovanju analize. Ova neobrađenost znači da će početni koraci uključivati zadatke pretprocesiranja kao što su čišćenje nepotrebnih vrijednosti, rukovanje duplikatima i strukturiranje podataka na način koji najbolje odgovara analitičkim ciljevima.
+
+Neki od zanimljivih atributa podatkovnog skupa kojeg ćemo eksplicitno prikazivati u našoj obradi su: 
+
+ - Izvođač (Artist)
+ - Godina izdanja (Release Year)
+ - Žanr (Genre)
+ - Popularnost pjesme (Track Popularity)
+ - Dužina trajanja (Duration)
+ 
+ 
+## UČITAVANJE PODATAKA I PROCESIRANJE
+**Učitvanje podataka i odbacivanje nepotrebnih stupaca koji se neće koristiti u daljnjoj analizi**
 ```{r}
 data <- read_csv("../data/spotify_songs.csv")
-data$playlist_name <- factor(data$playlist_name)
-data$playlist_genre <- factor(data$playlist_genre)
-data$playlist_subgenre <- factor(data$playlist_subgenre)
-data$mode <- factor(data$mode)
-data
 
+data <- data[c("track_id", "track_name", "track_artist", "track_popularity", "track_album_release_date", "playlist_genre", "duration_ms")]
 ```
 
-
+<br>
+**Preimenovanje stupaca za lakše korištenje u analizi**
 ```{r}
-dataOcjeneGenre <- data
-dataOcjeneGenre %>% group_by(playlist_genre) %>% summarise(meanOcjena=mean(track_popularity))->dataOcjeneGenre
-dataOcjeneGenre
-ggplot(data, aes(color = playlist_genre,y=track_popularity,x=danceability))+geom_point(alpha = 0.4)
-ggplot(dataOcjeneGenre, aes(x = playlist_genre,y=meanOcjena)) + geom_histogram()
-  
+data <- data %>%
+  rename(
+    TrackID = track_id,
+    TrackName = track_name,
+    Artist = track_artist,
+    Popularity = track_popularity,
+    ReleaseYear = track_album_release_date,
+    Genre = playlist_genre,
+    DurationMin = duration_ms
+  )
 ```
+
+<br>
+**Pretvorba trajanja u iz milisekunda u minute**
+```{r}
+data$DurationMin <- data$DurationMin / 60000
+data$DurationMin <- round(data$DurationMin, 2)
+```
+
+<br>
+**Faktorizacija određenih stupaca**
+```{r}
+data$Artist <- as.factor(data$Artist)
+data$Genre <- as.factor(data$Genre)
+```
+
+<br>
+**Pretvorba datuma izdanja u godinu izdanja**
+
+Zbog određenih nekonzistentnosti u podacima potrebna je prilagođena funkcija koja će trenutne podatke prilagoditi na
+točnu godinu izdanja koja će se poslije korsititi u analizi.
+
+Primjenjujemo funkciju na dani skup i izbacujemo NA vrijednosti koje nisu u zadanom formatu.
+```{r}
+extractYear <- function(date) {
+  parsed_date <- ymd(date, quiet = TRUE)
+  if (any(!is.na(parsed_date))) {
+    return(year(parsed_date))
+  } else {
+    # Ako je datum u formatu samo godine (npr. "1999")
+    if (str_detect(date, "^\\d{4}$")) {
+      return(as.numeric(date))
+    } else {
+      return(NA) # Ako format nije prepoznat
+    }
+  }
+}
+
+data$ReleaseYear <- sapply(data$ReleaseYear, extractYear)
+data <- data %>% filter(!is.na(ReleaseYear))
+```
+
+<br>
+**Prikaz podataka nakon uvodne obrade**
+```{r}
+glimpse(data)
+head(data)
+```
+
+
+## ANALIZA PROCESIRANOG PODATKOVNOG SKUPA
+***Popularnost žanrova na Spotifyu***
+```{r}
+ggplot(data, aes(x = Genre)) + 
+  geom_bar(fill = "#00AFBB") +
+  theme_minimal() + 
+  labs(title = "Broj Pjesama po Žanru", x = "Žanrovi", y = "Broj Pjesama") + 
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+<br>
+<br>
+**Analiza grafa**
+
+Graf "Broj Pjesama po Žanru" vizualno prikazuje raspodjelu glazbenih žanrova Spotify datasetu. Svaki stupac na grafu predstavlja određeni glazbeni žanr, dok visina stupca odražava broj pjesama u tom žanru.  
+
+Ovaj graf pruža početni uvid u glazbene preferencije i raznolikost žanrova među pjesmama na Spotifyju. Dominantni žanrovi mogu ukazivati na popularnost određenih glazbenih stilova među korisnicima platforme.
+
+Budući da je najpopulanriji edm (Electro dance music), prikazat ćemo njegovu popularnost kroz godine
+```{r}
+# Filtriranje podataka samo za žanr "EDM" i godine izdanja
+df_edm <- data[data$Genre == "edm" & data$ReleaseYear >= 2000, ]
+
+# Stvaranje bar grafa
+ggplot(df_edm, aes(x = ReleaseYear)) +
+  geom_bar(fill = "#00AFBB") +
+  theme_minimal() +
+  labs(title = "Broj Pjesama EDM Žanra po Godinama",
+       x = "Godina Izdanja",
+       y = "Broj Pjesama") +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+```
+<br>
+<br>
+**Analiza grafa**
+
+Graf "Broj Pjesama EDM Žanra po Godinama" vizualno prikazuje raspodjelu glazbenog žanra EDM (Electro dance music) nad Spotify datasetom. Svaki stupac na grafu predstavlja određenu godinu, dok visina stupca odražava broj pjesama u toj godini.
+
+Iz priloženog grafa može se zaključiti kako je edm (Electro dance music) postao sve više popularan tek od 2012 godine, te od tada sve više preuzima mainstream glazbe na Spotifyu.
+
+
+
+TODO:
+1. Dodati jos minimalno 3-4 grafa
+  - Popularnost Pjesama u Odnosu na Izvođača
+  - najpopularnijeg izvodaca pa onda njegove najpopularnije pjesme --> slicno kao i sa zanrovima
+  - popularnost ovisno o trajanju pjesme ili tako nesto na tu foru
+  - Vizualizacija Distribucije Trajanja Pjesama po Žanrovima
+Po mogucnosti probajte sredit da je barem jedan tockasti u boji da izgleda lijepo
+Napisat analizu svakog grafa, slicno kao sto je napisano na ova dva prethodna
+
+2. Zakljucak
+
+3. Formatirat sve i export u pdf.
+
+
 
