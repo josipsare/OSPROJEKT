@@ -1,9 +1,11 @@
 ---
 title: "Projekt OSP - Spotify Songs"
+author: 0036539445 Filip Buhinićek, 0036542400 Dominik Zoričić, 0036539188 Nikola
+  Botić
 date: "`r Sys.Date()`"
-author: "0036539445 Filip Buhinićek, 0036542400 Dominik Zoričić, 0036539188 Nikola Botić"
 output:
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -39,69 +41,26 @@ Neki od zanimljivih atributa podatkovnog skupa kojeg ćemo eksplicitno prikaziva
  
 ## UČITAVANJE PODATAKA I PROCESIRANJE
 **Učitvanje podataka i odbacivanje nepotrebnih stupaca koji se neće koristiti u daljnjoj analizi**
-```{r}
-data <- read_csv("../data/spotify_songs.csv")
 
-data <- data[c("track_id", "track_name", "track_artist", "track_popularity", "track_album_release_date", "playlist_genre", "duration_ms")]
+Budući da smo odlučili provoditi analizu podataka za koju nam je potrebno samo određeni skup stupaca, odbacujemo nekorištene stupce tj. višak informacija.
+```{r, include=FALSE}
+source("../R/initial_formating.R", local = knitr::knit_global())
 ```
+Na početku, podaci se učitavaju iz CSV datoteke. Ovaj korak je izveden korištenjem funkcije read_csv unutar R-a, a zanimljivo je da je prilikom učitavanja onemogućena automatska detekcija tipova stupaca. Ovo omogućuje veću kontrolu nad obradom podataka u kasnijim fazama, ali i veću odgovornost samog programera.
 
-<br>
-**Preimenovanje stupaca za lakše korištenje u analizi**
-```{r}
-data <- data %>%
-  rename(
-    TrackID = track_id,
-    TrackName = track_name,
-    Artist = track_artist,
-    Popularity = track_popularity,
-    ReleaseYear = track_album_release_date,
-    Genre = playlist_genre,
-    DurationMin = duration_ms
-  )
-```
+Nakon učitavanja, uslijedila je selekcija određenih stupaca iz skupa podataka. Ova operacija je ključna jer omogućuje fokusiranje samo na relevantne i korištene podatke. Stupci koji su zadržani uključuju identifikacijski broj pjesme, ime pjesme, izvođača, popularnost, datum izdanja albuma, žanr playliste i trajanje u milisekundama. Takav odabir stupaca osigurava da su sve bitne informacije zadržane za daljnju analizu.
 
-<br>
-**Pretvorba trajanja u iz milisekunda u minute**
-```{r}
-data$DurationMin <- data$DurationMin / 60000
-data$DurationMin <- round(data$DurationMin, 2)
-```
+Dalje, stupci su preimenovani u nazive koji su intuitivniji i lakši za razumijevanje. Na primjer, track_id postaje TrackID, a track_name postaje TrackName.
 
-<br>
-**Faktorizacija određenih stupaca**
-```{r}
-data$Artist <- as.factor(data$Artist)
-data$Genre <- as.factor(data$Genre)
-```
+Jedna od bitnih pretvorbi bila je pretvorba trajanja pjesama iz milisekundi u minute. Ovaj korak je primjer kako podatke možemo prilagoditi tako da budu u formatu koji je više usklađen s uobičajenim načinom percipiranja trajanja pjesama.
 
-<br>
-**Pretvorba datuma izdanja u godinu izdanja**
+Stupci Artist i Genre su transformirani u faktore, što je uobičajena praksa u R-u za rad s kategorijskim podacima. Ovaj korak olakšava analizu i vizualizaciju podataka koji spadaju u određene kategorije.
 
-Zbog određenih nekonzistentnosti u podacima potrebna je prilagođena funkcija koja će trenutne podatke prilagoditi na
-točnu godinu izdanja koja će se poslije korsititi u analizi.
+Važan dio procesa bila je ekstrakcija godine iz datuma izdanja. Razvijena je interna funkcija extractYear koja je mogla obraditi različite formate datuma i izvući relevantnu godinu. Ovo je bilo važno jer formati datuma nisu bili konzistentni unutar podataka. Na kraju, iz skupa podataka su uklonjeni svi redovi gdje godina izdanja nije bila dostupna. Ovo je osiguralo da analiza uključuje samo one zapise gdje su svi relevantni podaci prisutni.
 
-Primjenjujemo funkciju na dani skup i izbacujemo NA vrijednosti koje nisu u zadanom formatu.
-```{r}
-extractYear <- function(date) {
-  parsed_date <- ymd(date, quiet = TRUE)
-  if (any(!is.na(parsed_date))) {
-    return(year(parsed_date))
-  } else {
-    # Ako je datum u formatu samo godine (npr. "1999")
-    if (str_detect(date, "^\\d{4}$")) {
-      return(as.numeric(date))
-    } else {
-      return(NA) # Ako format nije prepoznat
-    }
-  }
-}
+Kroz ovaj proces, sirovi podaci su transformirani u oblik koji je pogodniji za detaljnu analizu. Ovaj postupak čišćenja i transformacije je ključan korak u pripremi podataka, jer osigurava da analiza koja slijedi bude temeljena na preciznim, relevantnim i dobro strukturiranim informacijama.
 
-data$ReleaseYear <- sapply(data$ReleaseYear, extractYear)
-data <- data %>% filter(!is.na(ReleaseYear))
-```
-
-<br>
-**Prikaz podataka nakon uvodne obrade**
+**Slijedi primjer kako podaci izgledaju nakon uvodne transformacije:**
 ```{r}
 glimpse(data)
 head(data)
@@ -110,7 +69,7 @@ head(data)
 
 ## ANALIZA PROCESIRANOG PODATKOVNOG SKUPA
 ***Popularnost žanrova na Spotifyu***
-```{r}
+```{r, include=FALSE}
 ggplot(data, aes(x = Genre)) + 
   geom_bar(fill = "#00AFBB") +
   theme_minimal() + 
@@ -122,7 +81,12 @@ ggplot(data, aes(x = Genre)) +
     axis.text.y = element_text(size = 10),
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
+
+ggsave("popularnost_zanrova.png")
 ```
+![](popularnost_zanrova.png)
+
+
 <br>
 <br>
 **Analiza grafa**
@@ -132,7 +96,7 @@ Graf "Broj Pjesama po Žanru" vizualno prikazuje raspodjelu glazbenih žanrova S
 Ovaj graf pruža početni uvid u glazbene preferencije i raznolikost žanrova među pjesmama na Spotifyju. Dominantni žanrovi mogu ukazivati na popularnost određenih glazbenih stilova među korisnicima platforme.
 
 Budući da je najpopulanriji edm (Electro dance music), prikazat ćemo njegovu popularnost kroz godine
-```{r}
+```{r, include=FALSE}
 # Filtriranje podataka samo za žanr "EDM" i godine izdanja
 df_edm <- data[data$Genre == "edm" & data$ReleaseYear >= 2000, ]
 
@@ -150,8 +114,10 @@ ggplot(df_edm, aes(x = ReleaseYear)) +
     axis.text.y = element_text(size = 10),
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
-
+ggsave("broj_pjesama_EDM_zanra_po_god.png")
 ```
+![](broj_pjesama_EDM_zanra_po_god.png)
+
 <br>
 <br>
 **Analiza grafa**
@@ -162,7 +128,7 @@ Iz priloženog grafa može se zaključiti kako je edm (Electro dance music) post
 
 
 **Najpopularniji izvodaci**
-```{r}
+```{r, include=FALSE}
 # Grupiranje podataka prema izvođačima
 artist_popularity <- data %>%
   group_by(Artist) %>%
@@ -190,14 +156,17 @@ ggplot(top_artists, aes(x = reorder(Artist, -TotalStreams), y = TotalStreams)) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 
+ggsave("najpopularniji_izvodaci.png")
 ```
+![](najpopularniji_izvodaci.png)
+<br>
 <br>
 **Analiza grafa**
 
 Grafički prikaz ukupnog broja pregleda temeljem 10 najpopularnijih pjesama svakog izvođača pruža zanimljiv uvid u popularnost umjetnika na Spotify platformi. Analizirajući graf, uočavamo da je Travis Scott apsolutni lider među izvođačima, slijedi ga Billie Eilish, Post Malone te ostali.
 
 **Najpopularnije pjesme Travis Scotta**
-```{r}
+```{r, include=FALSE}
 # Filtriranje podataka samo za izvođača Travis Scott
 travis_scott_songs <- data[data$Artist == "Travis Scott", ]
 
@@ -225,15 +194,17 @@ ggplot(top_travis_scott_songs, aes(x = reorder(TrackName, -Popularity), y = Popu
   scale_fill_brewer(palette = "Set3") +
   guides(fill = "none")  # Izbacivanje legende za boje
 
-
+ggsave("travis_scott.png")
 ```
+![](travis_scott.png)
+<br>
 <br>
 **Analiza grafa**
 
 Ova analiza naglašava impresivnu popularnost Travisa Scotta na Spotify platformi, pri čemu se ističe njegov utjecaj kroz deset najpopularnijih pjesama. "Highest in the Room" dominira među njima, zatim slijedi istoimeni Remix, "Sicko mode" i ostali. Presudila je njegova konstantnost jer nije samo bljesnuo s jednom pjesmom, već u svima drži jako visoku kvalitetu izvedbe.
 
 
-```{r}
+```{r, include=FALSE}
 popularity_duration <- data[,c("Popularity","DurationMin")]
 popularity_duration
 summary(popularity_duration$DurationMin)
@@ -250,7 +221,7 @@ ggplot(popularity_duration, aes(x = DurationCategory, y = Popularity, fill = Dur
         axis.title = element_text(size = 14),      # Adjust axis title size
         plot.title = element_text(size = 16, hjust = 0.5),  # Adjust plot title size and center it
         legend.position = "none")
-
+ggsave("graf1.png")
 
 ggplot(popularity_duration, aes(x = DurationMin, y = Popularity, fill = DurationCategory)) +
   geom_col() +
@@ -269,17 +240,19 @@ ggplot(popularity_duration, aes(x = DurationMin, y = Popularity, fill = Duration
         panel.background = element_rect(fill = "white"),
         axis.line = element_line(color = "black"),
         legend.background = element_rect(fill = "white"))
-
-
-
+ggsave("graf2.png")
 ```
+![](graf1.png)
+<br>
+<br>
+![](graf2.png)
 <br>
 <br>
 **Analiza grafa**
 Podijelili smo trajanje pjesama u 3 jednake kategorije, Short, Medium, Long. Graf "Boxplot - Popularnost u odnosu na trajanje" prikazuje odnose Q1, Q2 i Q3 metrika koje se odnose na popularnost pjesama pripadajuće kategorije. Iz priloženog se vidi da je medijan popularnosti za duge pjesme znatno niži nego što možemo reći sa kratke i srednje. Tu tvrdnju samo podupire graf "Popularnost u odnosu na duljinu" koji prikazuje da su srednje pjesme najpopularnije, na drugom mjestu su kratke, a daleko ispod njih se nalaze duge pjesme
 
 
-```{r}
+```{r, include=FALSE}
 data$Genre %>% factor() %>% table()
 
 ggplot(data, aes(x = Popularity, fill = Genre)) +
@@ -290,11 +263,16 @@ ggplot(data, aes(x = Popularity, fill = Genre)) +
         axis.title = element_text(size = 14),
         plot.title = element_text(size = 16, hjust = 0.5),
         legend.position = "top")  # Move the legend to the top
+ggsave("graf3.png")
 ```
+![](graf3.png)
 <br>
 <br>
 **Analiza grafa**
 Iz grafa "Graf funkcije gustoće popularnosti po žanru" možemo zaključiti da većinom funkcije gustoća svih žanrova donekle prate normalnu razdiobu, stime da sve imaju veliku devijaciju u lijevom repu. Naime Žanr "edm" ima najviše malo popularnih pjesama, dok "pop" najmanje. Najviše srednje ocjenjenih pjesama pripadaju žanru "rap", dok u najbolje ocjenjenim pjesmama prednjači žanr "latin" 
+
+<br>
+<br> 
 
 ## ZAKLJUČAK
 Na samom početku smo napravili potrebne pretvorbe podataka, i pretvorbe tipova podataka u one koje omogućavaju lakšu analizu. Nakon toga nam je ostao podatknovni skup na kojem je puno laške izvoditi analize koje nas zanimaju. Iz grafa "Broj Pjesama po Žanru" vidimo da svakom žanru pripadaju od okvirno 5000 do 6000 pjesama. Za bližu analizu broja novih pjesama kroz godine smo uzeli žanr "edm" i to smo predstavili u grafu "Broj Pjesama EDM Žanra po Godinama". Iz grafa možemo isčitati da je žanr bio relativno nepopularan do 2015. godine, a posebice do 2010. godine. Nakon 2015. godine žanr uživa puno veću popularnost i dostiže brojke od čak više od 2000 novih pjesama godišnje netom prije 2020. godine. Zatim smo obradili popularnost samih izvođača i njihovih pjesama. Grafički prikaz ukupnog broja pregleda temeljem 10 najpopularnijih pjesama svakog izvođača pruža intrigantan uvid u popularnost umjetnika na Spotify platformi. Analizom grafa ističe se da je Travis Scott apsolutni lider među izvođačima. Ova analiza naglašava impresivnu popularnost Travisa Scotta na Spotify platformi, ističući njegov utjecaj kroz deset najpopularnijih pjesama. Posebno se ističe "Highest in the Room" kao dominantna pjesma. Ključna je Travisova konstantnost, ne samo s jednom pjesmom, već s održavanjem visoke kvalitete izvedbe u svim pjesmama.Nakon toga smo se odlučili analizirati odnos popularnosti i trajanja pjesme tako što smo trajanje podjelili u 3 podjednake kategorije.Iz grafova "Boxplot - Popularnost u odnosu na trajanje" i "Popularnost u odnosu na duljinu" vidimo kako su dulje pjesme u glavnom lošije ocjenjene u odnosu na pjesme koje su kratke ili srendnje, koje prednjače u popularnosti. Za kraj odlučili smo se na analizu funckije gustoće popularnosti pojedinih žanrova što smo vizualizirali u grafu "Graf funkcije gustoće popularnosti po žanru". Vidimo da po broju nisko ocjenjenih pjesama pobjedu odnosi žanr "edm" dok žanr "rap" prednjači po srednje ocjenjenim pjesmama, a u najboljim pjesmama se ističe žanr "latin".
