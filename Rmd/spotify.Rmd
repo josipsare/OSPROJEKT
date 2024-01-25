@@ -4,8 +4,8 @@ author: 0036539445 Filip Buhinićek, 0036542400 Dominik Zoričić, 0036539188 Ni
   Botić
 date: "`r Sys.Date()`"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -65,6 +65,9 @@ Kroz ovaj proces, sirovi podaci su transformirani u oblik koji je pogodniji za d
 glimpse(data)
 head(data)
 ```
+
+
+
 
 
 ## ANALIZA PROCESIRANOG PODATKOVNOG SKUPA
