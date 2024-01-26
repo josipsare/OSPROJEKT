@@ -1,6 +1,6 @@
 data <- read_csv("../data/spotify_songs.csv", show_col_types = FALSE)
 
-data <- data[c("track_id", "track_name", "track_artist", "track_popularity", "track_album_release_date", "playlist_genre", "duration_ms")]
+data <- data[c("track_id", "track_name", "track_artist", "track_popularity", "track_album_release_date", "playlist_genre", "duration_ms", "danceability")]
 
 data <- data %>%
   rename(
@@ -10,7 +10,8 @@ data <- data %>%
     Popularity = track_popularity,
     ReleaseYear = track_album_release_date,
     Genre = playlist_genre,
-    DurationMin = duration_ms
+    DurationMin = duration_ms,
+    DanceAbility = danceability
   )
 
 data$DurationMin <- data$DurationMin / 60000

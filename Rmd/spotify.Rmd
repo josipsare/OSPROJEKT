@@ -244,6 +244,17 @@ ggplot(popularity_duration, aes(x = DurationMin, y = Popularity, fill = Duration
         axis.line = element_line(color = "black"),
         legend.background = element_rect(fill = "white"))
 ggsave("graf2.png")
+
+popularity_duration <- popularity_duration %>% filter(Popularity>0)
+ggplot(popularity_duration, aes(x=DurationMin, y=Popularity, color=DurationCategory)) +
+  geom_point() +
+  geom_smooth(method="lm", se=FALSE, formula=y ~ x, aes(group=DurationCategory), color="black") +
+  labs(title="Regresijski grafikon - Popularity vs DurationMin", x="DurationMin", y="Popularity") +
+  theme_minimal() +
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=14),
+        plot.title=element_text(size=16, hjust=0.5))
+ggsave("lin_regresija.png")
 ```
 ![](graf1.png)
 <br>
@@ -251,8 +262,18 @@ ggsave("graf2.png")
 ![](graf2.png)
 <br>
 <br>
+![](lin_regresija.png)
+
+<br>
+<br> 
+
 **Analiza grafa**
-Podijelili smo trajanje pjesama u 3 jednake kategorije, Short, Medium, Long. Graf "Boxplot - Popularnost u odnosu na trajanje" prikazuje odnose Q1, Q2 i Q3 metrika koje se odnose na popularnost pjesama pripadajuće kategorije. Iz priloženog se vidi da je medijan popularnosti za duge pjesme znatno niži nego što možemo reći sa kratke i srednje. Tu tvrdnju samo podupire graf "Popularnost u odnosu na duljinu" koji prikazuje da su srednje pjesme najpopularnije, na drugom mjestu su kratke, a daleko ispod njih se nalaze duge pjesme
+
+Podijelili smo trajanje pjesama u 3 jednake kategorije, Short, Medium, Long. Graf "Boxplot - Popularnost u odnosu na trajanje" prikazuje odnose Q1, Q2 i Q3 metrika koje se odnose na popularnost pjesama pripadajuće kategorije. Iz priloženog se vidi da je medijan popularnosti za duge pjesme znatno niži nego što možemo reći sa kratke i srednje. Tu tvrdnju samo podupire graf "Popularnost u odnosu na duljinu" koji prikazuje da su srednje pjesme najpopularnije, na drugom mjestu su kratke, a daleko ispod njih se nalaze duge pjesme.
+Iz grafa "Regresijski Grafikon - Popularity vs DurationMin" koji prikazuje regresiju Popularitiy-a u odnosu na Duration, lako se zaključi da je Duration dobra regresijska varijabla za Popularity. U kategoriji kratkih pjesama vidimo rast Popularity-a sa rastom trajanja, dok u ostale dvije skupine, srednje-duge pjesme i duge pjesme, vidimo jednaki takav pad varijable Popularity u odnosu na regresor DurationMin
+<br>
+<br>
+
 
 
 ```{r, include=FALSE}
@@ -272,13 +293,90 @@ ggsave("graf3.png")
 <br>
 <br>
 **Analiza grafa**
+
 Iz grafa "Graf funkcije gustoće popularnosti po žanru" možemo zaključiti da većinom funkcije gustoća svih žanrova donekle prate normalnu razdiobu, stime da sve imaju veliku devijaciju u lijevom repu. Naime Žanr "edm" ima najviše malo popularnih pjesama, dok "pop" najmanje. Najviše srednje ocjenjenih pjesama pripadaju žanru "rap", dok u najbolje ocjenjenim pjesmama prednjači žanr "latin" 
 
 <br>
 <br> 
 
+```{r, include=FALSE}
+selected_years <- data[data$ReleaseYear %in% c(2017, 2018, 2019), ]
+ggplot(selected_years, aes(x = DurationMin, fill = as.factor(ReleaseYear))) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Odnos Vremena Trajanja Pjesama za Godine 2017, 2018, i 2019",
+       x = "Trajanje (u minutama)",
+       y = "Gustoća") +
+  scale_x_continuous(breaks = seq(0, 10, by = 1)) +  # Postavljanje oznaka na osi x svakih 1 minutu
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+    axis.title.x = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 12, face = "bold"),
+    axis.text.y = element_text(size = 10),
+    axis.text.x = element_text(size = 10),
+    axis.ticks = element_line(size = 0.5),  # Podešavanje debljine oznaka na osi x
+    panel.grid.major = element_line(color = "lightgray", linetype = "dashed", size = 0.5),
+    panel.grid.minor = element_blank()
+  )
+ggsave("duration_years.png")
+```
+![](duration_years.png)
+<br>
+<br>
+**Analiza grafa**
+
+Iz analize grafa odnosa vremena trajanja pjesama za godine 2017., 2018. i 2019., uočavamo da je za sve tri godine najveći broj pjesama trajao između 3 i 4 minute. Ovaj trend posebno je izražen u 2017. godini, gdje gustoća pjesama u tom vremenskom intervalu dominira u usporedbi s preostalim godinama. Primjećujemo i značajan porast broja kraćih pjesama, od 2 do 3 minute, tijekom 2019. godine, čime se nastavlja trend započet u 2018. godini. Takve kraće pjesme karakterizirane su lakoćom pamćenja i postaju sve popularnije s godinama.
+U skladu s navedenim, zaključujemo da je s vremenom postao popularniji i učestaliji tip pjesama koji traje kraće, trenutno najpopularniji oko 3 minuta, no s tendencijom pada vremena izvođenja.
+
+<br>
+<br>
+
+```{r, include=FALSE}
+ggplot(data, aes(x = Genre, y = DurationMin, fill = Genre)) +
+  geom_violin() +
+  labs(title = "Distribucija trajanja pjesama po žanrovima", x = "Žanr", y = "Trajanje (min)") +
+  theme_minimal()
+ggsave("distribution.png")
+```
+![](distribution.png)
+
+<br>
+<br>
+**Analiza grafa**
+
+Analiza distribucije trajanja pjesama unutar različitih glazbenih žanrova, prema našem datasetu, otkriva značajne razlike između žanrova, osobito između rapa i popa. Možemo primjetiti je da se rap ističe svojom širokom distribucijom trajanja pjesama, pokrivajući širok spektar vremenskih intervala. Ovo ukazuje na raznolikost u strukturi i formi rap pjesama, sugerirajući fleksibilnost žanra u pogledu trajanja.
+Nasuprot tome, žanr pop pokazuje tendenciju koncentracije oko prosječnog trajanja od približno tri minute. Ovo bi moglo odražavati standardiziranu formu popularnih pjesama, koje su često usmjerene na radio emitiranje i komercijalnu dostupnost. Zanimljivo je primijetiti da se žanr 'latin' uvelike podudara s popom po distribuciji trajanja, što ukazuje na sličnosti u strukturalnim konvencijama između ova dva žanra.
+Dodatno, naša analiza ukazuje da žanr R&B, u prosjeku, ima najduže trajanje pjesama unutar analiziranih žanrova. Ovo može odražavati jedinstvene umjetničke i kreativne izbore koji karakteriziraju R&B glazbu, kao što su produženi instrumentalni dijelovi ili složenija lirska struktura.
+Ovi uvidi pružaju zanimljiv pogled na različite glazbene prakse i konvencije unutar svakog žanra, ističući kako se umjetničke preferencije i industrijski standardi mogu odražavati kroz osnovne elemente poput trajanja pjesme.
+
+
+<br>
+<br> 
+```{r, include=FALSE}
+ggplot(data, aes(x = Genre, y = DanceAbility, fill = Genre)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Odnos Danceabilitya po žanrovima", x = "Žanr", y = "Danceability")
+ggsave("dance.png")
+```
+![](dance.png)
+
+<br>
+<br>Graf "Odnos Danceabilitya po Žanrovima" pruža vizualni uvid u raspodjelu danceabilitya među različitim glazbenim žanrovima. Svaki žanr predstavljen je na x-osi, dok je danceability prikazan na y-osi, čime se omogućava usporedba plesnosti među žanrovima.
+
+Gledajući graf možemo vidno primjetiti kako rock žanr ima daleko najniži prosječni danceability, što odražava njegove karakteristične glazbene elemente manje prikladne za ples. S druge strane, rap i latin se izdvajaju kao žanrovi s najvišim prosječnim danceabilityem, sugerirajući da glazba u ovim žanrovima često potiče na ples i dinamičnost.
+**Analiza grafa**
+
+Graf "Odnos Danceabilitya po Žanrovima" pruža vizualni uvid u raspodjelu danceabilitya među različitim glazbenim žanrovima. Svaki žanr predstavljen je na x-osi, dok je danceability prikazan na y-osi, čime se omogućava usporedba plesnosti među žanrovima.
+Gledajući graf možemo vidno primjetiti kako rock žanr ima daleko najniži prosječni danceability, što odražava njegove karakteristične glazbene elemente manje prikladne za ples. S druge strane, rap i latin se izdvajaju kao žanrovi s najvišim prosječnim danceabilityem, sugerirajući da glazba u ovim žanrovima često potiče na ples i dinamičnost.
+
+
+<br>
+<br> 
+
+
 ## ZAKLJUČAK
-Na samom početku smo napravili potrebne pretvorbe podataka, i pretvorbe tipova podataka u one koje omogućavaju lakšu analizu. Nakon toga nam je ostao podatknovni skup na kojem je puno laške izvoditi analize koje nas zanimaju. Iz grafa "Broj Pjesama po Žanru" vidimo da svakom žanru pripadaju od okvirno 5000 do 6000 pjesama. Za bližu analizu broja novih pjesama kroz godine smo uzeli žanr "edm" i to smo predstavili u grafu "Broj Pjesama EDM Žanra po Godinama". Iz grafa možemo isčitati da je žanr bio relativno nepopularan do 2015. godine, a posebice do 2010. godine. Nakon 2015. godine žanr uživa puno veću popularnost i dostiže brojke od čak više od 2000 novih pjesama godišnje netom prije 2020. godine. Zatim smo obradili popularnost samih izvođača i njihovih pjesama. Grafički prikaz ukupnog broja pregleda temeljem 10 najpopularnijih pjesama svakog izvođača pruža intrigantan uvid u popularnost umjetnika na Spotify platformi. Analizom grafa ističe se da je Travis Scott apsolutni lider među izvođačima. Ova analiza naglašava impresivnu popularnost Travisa Scotta na Spotify platformi, ističući njegov utjecaj kroz deset najpopularnijih pjesama. Posebno se ističe "Highest in the Room" kao dominantna pjesma. Ključna je Travisova konstantnost, ne samo s jednom pjesmom, već s održavanjem visoke kvalitete izvedbe u svim pjesmama.Nakon toga smo se odlučili analizirati odnos popularnosti i trajanja pjesme tako što smo trajanje podjelili u 3 podjednake kategorije.Iz grafova "Boxplot - Popularnost u odnosu na trajanje" i "Popularnost u odnosu na duljinu" vidimo kako su dulje pjesme u glavnom lošije ocjenjene u odnosu na pjesme koje su kratke ili srendnje, koje prednjače u popularnosti. Za kraj odlučili smo se na analizu funckije gustoće popularnosti pojedinih žanrova što smo vizualizirali u grafu "Graf funkcije gustoće popularnosti po žanru". Vidimo da po broju nisko ocjenjenih pjesama pobjedu odnosi žanr "edm" dok žanr "rap" prednjači po srednje ocjenjenim pjesmama, a u najboljim pjesmama se ističe žanr "latin".
+Na samom početku smo napravili potrebne pretvorbe podataka, i pretvorbe tipova podataka u one koje omogućavaju lakšu analizu. Nakon toga nam je ostao podatknovni skup na kojem je puno laške izvoditi analize koje nas zanimaju. Iz grafa "Broj Pjesama po Žanru" vidimo da svakom žanru pripadaju od okvirno 5000 do 6000 pjesama. Za bližu analizu broja novih pjesama kroz godine smo uzeli žanr "edm" i to smo predstavili u grafu "Broj Pjesama EDM Žanra po Godinama". Iz grafa možemo isčitati da je žanr bio relativno nepopularan do 2015. godine, a posebice do 2010. godine. Nakon 2015. godine žanr uživa puno veću popularnost i dostiže brojke od čak više od 2000 novih pjesama godišnje netom prije 2020. godine. Zatim smo obradili popularnost samih izvođača i njihovih pjesama. Grafički prikaz ukupnog broja pregleda temeljem 10 najpopularnijih pjesama svakog izvođača pruža intrigantan uvid u popularnost umjetnika na Spotify platformi. Analizom grafa ističe se da je Travis Scott apsolutni lider među izvođačima. Ova analiza naglašava impresivnu popularnost Travisa Scotta na Spotify platformi, ističući njegov utjecaj kroz deset najpopularnijih pjesama. Posebno se ističe "Highest in the Room" kao dominantna pjesma. Ključna je Travisova konstantnost, ne samo s jednom pjesmom, već s održavanjem visoke kvalitete izvedbe u svim pjesmama.Nakon toga smo se odlučili analizirati odnos popularnosti i trajanja pjesme tako što smo trajanje podjelili u 3 podjednake kategorije.Iz grafova "Boxplot - Popularnost u odnosu na trajanje" i "Popularnost u odnosu na duljinu" vidimo kako su dulje pjesme u glavnom lošije ocjenjene u odnosu na pjesme koje su kratke ili srendnje, koje prednjače u popularnosti. Kao dodatak tomu, proveli smo regresijsku analizu rečenih varijabli podjeljenih u iste kategorije. Kod kratkih pjesama uočavamo pad popularnosti što su one dulje, dok kod ostalih kategorija uočavamo jednako snažan pad popularnost što se regresor DurationMin povećava. Za kraj odlučili smo se na analizu funckije gustoće popularnosti pojedinih žanrova što smo vizualizirali u grafu "Graf funkcije gustoće popularnosti po žanru". Vidimo da po broju nisko ocjenjenih pjesama pobjedu odnosi žanr "edm" dok žanr "rap" prednjači po srednje ocjenjenim pjesmama, a u najboljim pjesmama se ističe žanr "latin".
 
 
 
